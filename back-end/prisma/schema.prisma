@@ -6,10 +6,113 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int             @id @default(autoincrement())
+  provider     String
+  providerId   String
+  email        String?         @unique
+  username     String
+  profileImg   String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime?
+  deletedAt    DateTime?
+
+  albums       Album[]         @relation("UserAlbums")
+  albumMembers AlbumMember[]
+
+  @@unique([provider, providerId])
+}
+
+model Album {
+  id              Int            @id @default(autoincrement())
+  name            String
+  thumbnailUrl    String?
+  backgroundColor String
+  ownerId         Int
+
+  owner           User           @relation("UserAlbums", fields: [ownerId], references: [id])
+  members         AlbumMember[]
+  images          Image[]
+}
+
+model AlbumMember {
+  id       Int     @id @default(autoincrement())
+  nickname String
+  userId   Int
+  albumId  Int
+  isOwner  Boolean
+
+  user     User    @relation(fields: [userId], references: [id])
+  album    Album   @relation(fields: [albumId], references: [id])
+  uploads  Image[] @relation("Uploader")
+  comments ImageComment[]
+  likes    ImageLike[]
+
+  @@unique([userId, albumId])
+}
+
+model Image {
+  id           Int             @id @default(autoincrement())
+  originName   String
+  originUrl    String
+  thumbnailUrl String
+  metadata     Json?
+  albumId      Int
+  uploaderId   Int
+  createdAt    DateTime        @default(now())
+  deletedAt    DateTime?
+  viewCount    Int             @default(0)
+
+  album        Album           @relation(fields: [albumId], references: [id])
+  uploader     AlbumMember     @relation("Uploader", fields: [uploaderId], references: [id])
+  comments     ImageComment[]
+  likes        ImageLike[]
+  tags         ImageTag[]
+}
+
+model ImageComment {
+  id         Int          @id @default(autoincrement())
+  imageId    Int
+  memberId   Int
+  contents   String
+  createdAt  DateTime     @default(now())
+  deletedAt  DateTime?
+
+  image      Image        @relation(fields: [imageId], references: [id])
+  member     AlbumMember  @relation(fields: [memberId], references: [id])
+}
+
+model ImageLike {
+  imageId  Int
+  memberId Int
+
+  image    Image        @relation(fields: [imageId], references: [id])
+  member   AlbumMember  @relation(fields: [memberId], references: [id])
+
+  @@id([imageId, memberId])
+}
+
+model Tag {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
+  createdAt DateTime    @default(now())
+
+  images    ImageTag[]
+}
+
+model ImageTag {
+  imageId Int
+  tagId   Int
+
+  image   Image @relation(fields: [imageId], references: [id])
+  tag     Tag   @relation(fields: [tagId], references: [id])
+
+  @@id([imageId, tagId])
 }
