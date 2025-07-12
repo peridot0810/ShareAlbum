@@ -8,7 +8,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
+datasource sharealbum {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
